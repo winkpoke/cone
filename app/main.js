@@ -10,6 +10,7 @@ function createWindow () {
   mainWindow = new BrowserWindow({
     width: 1024,
     height: 768,
+    // frame: false,
     webPreferences: {
       nodeIntegration: true
     }
@@ -17,8 +18,7 @@ function createWindow () {
 
   // and load the index.html of the app.
   //mainWindow.loadFile('ui/index.html')
-  //mainWindow.loadFile('resources/index.html')
-  mainWindow.loadFile('www/index.html')
+  mainWindow.loadFile('resources/index.html')
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()

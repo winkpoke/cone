@@ -2,3 +2,6 @@ node_modules/
 /ui/semantic/dist/
 /app/game_of_life
 /app/www
+/app/resources/
+/app/cone.rust/target
+/app/cone.rust/Cargo.lock
