@@ -1,4 +1,4 @@
 node_modules/
-/ui/semantic/dist
-/app/game_of_life
-/app/www
+/ui/semantic/dist/
+/app/game_of_life/
+/app/www/
