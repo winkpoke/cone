@@ -1,0 +1,2 @@
+- 2019.03.31   Successfully prototyped wasm + rust (yew) + electron
+- 2019.04.01   Initialized repo and checked into github
