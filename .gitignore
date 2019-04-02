@@ -1,7 +1,14 @@
 node_modules/
+
 /ui/semantic/dist/
+/ui/photon
+
 /app/game_of_life
 /app/www
 /app/resources/
+
 /app/cone.rust/target
 /app/cone.rust/Cargo.lock
+
+/app/cone.cljs/target
+

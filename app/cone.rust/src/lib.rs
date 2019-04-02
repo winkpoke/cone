@@ -1,16 +1,31 @@
 use stdweb::web::Date;
+use yew::services::{ConsoleService, IntervalService};
 use yew::{html, Component, ComponentLink, Html, Renderable, ShouldRender};
-use yew::services::ConsoleService;
+
+mod data_model {
+    pub struct Cone {
+        no: u16,
+        diameter: u16,
+    }
+}
 
 pub struct Model {
     console: ConsoleService,
     value: i64,
+
+    position: Option<u16>,
+    treat: Option<Vec<data_model::Cone>>,
 }
 
 pub enum Msg {
     Increment,
     Decrement,
     Bulk(Vec<Msg>),
+
+    Idle,
+    Rotating,
+    OnPosition(u8),
+    Treating,
 }
 
 impl Component for Model {
@@ -21,6 +36,8 @@ impl Component for Model {
         Model {
             console: ConsoleService::new(),
             value: 0,
+            position: None,
+            treat: None,
         }
     }
 
@@ -34,10 +51,13 @@ impl Component for Model {
                 self.value = self.value - 1;
                 self.console.log("minus one");
             }
-            Msg::Bulk(list) => for msg in list {
-                self.update(msg);
-                self.console.log("Bulk action");
-            },
+            Msg::Bulk(list) => {
+                for msg in list {
+                    self.update(msg);
+                    self.console.log("Bulk action");
+                }
+            }
+            _ => (),
         }
         true
     }
@@ -48,6 +68,9 @@ impl Renderable<Model> for Model {
         html! {
             <div>
                 <nav class="menu",>
+                    <button onclick=|_| Msg::Increment,>{ "Treat" }</button>
+                    <button onclick=|_| Msg::Increment,>{ "Finish" }</button>
+                    <button onclick=|_| Msg::Increment,>{ "Next Cone" }</button>
                     <button onclick=|_| Msg::Increment,>{ "Increment" }</button>
                     <button onclick=|_| Msg::Decrement,>{ "Decrement" }</button>
                     <button onclick=|_| Msg::Bulk(vec![Msg::Increment, Msg::Increment]),>{ "Increment Twice" }</button>
@@ -58,4 +81,3 @@ impl Renderable<Model> for Model {
         }
     }
 }
-

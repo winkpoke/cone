@@ -18,7 +18,8 @@ function createWindow () {
 
   // and load the index.html of the app.
   //mainWindow.loadFile('ui/index.html')
-  mainWindow.loadFile('resources/index.html')
+  //mainWindow.loadFile('resources/index.html')
+  mainWindow.loadFile('cone.cljs/public/index.html')
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
