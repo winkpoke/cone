@@ -8,23 +8,32 @@
 
 (defonce cones-diameter '(0.5 1.0 1.5 2.0 2.5 3.0))
 
-(defonce status #{:idle :rotating :on-position :treating})
+(defonce status #{:idle :ready :switching :on-position})
 
 (def db (r/atom {:cones '(1 3 4)
-                 :pos nil
+                 :n 0 
                  :status :idle}))
 
 ;; -------------------------
 ;; Message
 
-(defonce message #{:open-patient :next-cone :start-treat :finish-treat})
+(defonce message #{:open-patient :start-treat :finish-treat 
+                   :toggle-on :toggle-off})
 
+(defn start-treat []
+  (swap! db assoc  :status :ready))
+
+(defn snd [msg]
+  (condp = msg
+    :start-treat (start-treat)
+    )
+  )
 
 ;; -------------------------
 ;; Views
 
 (defn simple-component []
-  [:div
+  [:div.ui.disabled {:style {:backgroundColor "#CCCCCC"}}
    [:p "I am a component!"]
    [:p.someclass
     "I have " [:strong "bold"]
@@ -33,9 +42,10 @@
 (defn cone-control []
   [:nav.menu
    [:button "Open"]
-   [:button "Treat"]
+   [:button {:on-click #(snd :start-treat)} "Treats"]
    [:button "Finish"]
-   [:button "Next Cone"]])
+   [:label (str (:status @db))]
+   ])
 
 (defn patient-info []
   [:div 
@@ -45,16 +55,35 @@
    [:p "#Cones: 3"]]
   )
 
+(defn greyout? [n]
+  (let [status #{:idle :switching}] 
+    (or (contains? status (:status @db))
+        (not= n (:n @db))))
+  )
+
+(defn greyout []
+  {:style {:backgroundColor "#CCCCCC"}}
+  )
+
+(defn toggle [label disable?]
+ [:div.ui.toggle.checkbox.disabled
+  [:input {:type "checkbox" :name "public" :disabled disable?}]
+  [:label (or label "")]
+  ]
+)
+
 (defn cone-status []
-  [:div
+  [:div 
    [:h4 "Cone status:"]
    (let [cones (:cones @db)] 
      (for [i (range (count cones))
            :let [n (nth cones i)]]
-     [:div 
+     [:div (when (greyout? i) (greyout)) 
       [:h5 (str "#" (inc i) " Treatment")]
       [:p {:style {:color "green"}} 
        (str "Cone" "#" n ":   ϕ" (nth cones-diameter n) "mm")]
+      [toggle "On/Off" (greyout? i)]
+      [:p "-------------------------------"]
       ]
      ))
    ]
@@ -62,6 +91,7 @@
 
 (defn home-page []
   [:div [:h2 "Welcome to Cone Monitor"]
+        [simple-component]
         [patient-info]
         [cone-status]
         [cone-control]
