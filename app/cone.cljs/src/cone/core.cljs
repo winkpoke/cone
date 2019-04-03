@@ -47,26 +47,39 @@
     (loop [n 0 cone (get cones 0)]
       (if (:on? cone)
         n
-        (recur (inc n) (get cones (inc n)))
-        )
-      )
-    )
-  )
+        (recur (inc n) (get cones (inc n)))))))
+
+(defn patient-name [data]
+  (get-in data [:patient-info :name]))
+
+(defn patient-sex [data]
+  (get-in data [:patient-info :name]))
+
 (defn toggle-cone! [db n]
   (swap! db update-in [:cones n :on?] not))
 
 (defn set-cone-status! [db n status]
-  (swap! db assoc-in [:cones n :status] status)
-  )
+  (swap! db assoc-in [:cones n :status] status))
+
 (defn set-current-cone! [db n]
+  (println (str "current cone#" (current-cone-no @db)
+                  " set cone#" n
+                  " n cones: " (no-of-cones @db)
+                  "\n" @db))
   (let [i (current-cone-no @db)]
     (when-not (== n i) 
       (letfn [(update-all [db i n] 
                 (toggle-cone! db i)
                 (set-cone-status! db i :idle)
-                (toggle-cone! db n)
-                (set-cone-status! db n :ready))] 
-        (swap! db update-all i n)))))
+                (when (< n (no-of-cones @db)) 
+                  (do
+                    (println "----------------")
+                    (toggle-cone! db n))
+                    (set-cone-status! db n :ready)))] 
+        ;(swap! db update-all i n)
+        (update-all db i n)
+        (println @db)
+        ))))
 
 
 ;(print @db)
@@ -87,13 +100,23 @@
   )
 
 (defn toggle-cone []
-  ()
   )
 
-(defn snd [msg & rest]
+(defn toggle-on [n]
+  (js/console.log "toggle-on cone#" n)
+  )
+
+(defn toggle-off [n]
+  (js/console.log "toggle-off cone#" n)
+  (set-current-cone! db (inc n))
+  )
+
+(defn snd [msg & rst]
   (condp = msg
     :start-treat (start-treat)
     :toggle-cone (toggle-cone)
+    :toggle-on (apply toggle-on rst)
+    :toggle-off (apply toggle-off rst)
     )
   )
 
@@ -122,14 +145,13 @@
    [:button "Open"]
    [:button {:on-click #(snd :start-treat)} "Treats"]
    [:button "Finish"]
-   [:label (str (:status @db))]
-   ])
+   [:label (str (:status @db))]])
 
 (defn patient-info []
   [:div 
    [:h4 "Patient information:"]
-   [:p (str "Name: " (get-in @db [:patient-info :name]))]
-   [:p "Sex: Male"]
+   [:p (str "Name: " (patient-name @db))]
+   [:p (str "Sex: " (patient-sex @db))]
    [:p (str "#Cones: " (no-of-cones @db))]]
   )
 
@@ -143,10 +165,9 @@
                        (js/console.log (-> this .-target .-checked))
                        (let [id (js/parseInt (-> this .-target .-id))
                              checked (-> this .-target .-checked)]
-                         (str 12)
-                         )
-                       (snd :toggle-cone))
-           }]
+                         (if checked 
+                           (snd :toggle-on id)
+                           (snd :toggle-off id))))}]
   [:label (or label "")]
   ]
 )
@@ -172,7 +193,7 @@
 
 (defn home-page []
   [:div [:h2 "Welcome to Cone Monitor"]
-         [simple-component]
+;         [simple-component]
          [patient-info]
          [cone-status]
          [cone-control]
