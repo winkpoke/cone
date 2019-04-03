@@ -13,17 +13,12 @@
 (def raw-data {:patient-info {:name "John" :sex "Male"}
                :cones '(1 3 4)})
 
-
 (defn init-model [data]
   (letfn [(no-of-cones [] (count (:cones data)))
           (nth-cone [n] (nth (:cones data) n))] 
     {:patient-info (:patient-info data)
      :cones (vec (for [i (range (no-of-cones))]
                    {:n i :cone-pos (nth-cone i) :on? false :status :idle}))}))
-
-;; (def db (r/atom {:cones '(1 3 4)
-;;                  :n 0 
-;;                  :status :idle}))
 
 (def db (r/atom (init-model raw-data)))
 
@@ -53,13 +48,19 @@
   (get-in data [:patient-info :name]))
 
 (defn patient-sex [data]
-  (get-in data [:patient-info :name]))
+  (get-in data [:patient-info :sex]))
+
+(defn toggle-cone [data n]
+  (update-in data [:cones n :on?] not))
 
 (defn toggle-cone! [db n]
-  (swap! db update-in [:cones n :on?] not))
+  (swap! db toggle-cone n))
+
+(defn set-cone-status [data n status]
+  (assoc-in data [:cones n :status] status))
 
 (defn set-cone-status! [db n status]
-  (swap! db assoc-in [:cones n :status] status))
+  (swap! db set-cone-status n status))
 
 (defn set-current-cone! [db n]
   (println (str "current cone#" (current-cone-no @db)
@@ -99,9 +100,6 @@
   (println @db)
   )
 
-(defn toggle-cone []
-  )
-
 (defn toggle-on [n]
   (js/console.log "toggle-on cone#" n)
   )
@@ -111,14 +109,17 @@
   (set-current-cone! db (inc n))
   )
 
+(defn finish-treat []
+  (js/window.alert "Treatment finished")
+  )
+
 (defn snd [msg & rst]
   (condp = msg
     :start-treat (start-treat)
-    :toggle-cone (toggle-cone)
     :toggle-on (apply toggle-on rst)
     :toggle-off (apply toggle-off rst)
-    )
-  )
+    :finish-treat (finish-treat)
+    ))
 
 ;; -------------------------
 ;; Views
@@ -144,7 +145,7 @@
   [:nav.menu
    [:button "Open"]
    [:button {:on-click #(snd :start-treat)} "Treats"]
-   [:button "Finish"]
+   [:button {:on-click #(snd :finish-treat)} "Finish"]
    [:label (str (:status @db))]])
 
 (defn patient-info []
@@ -152,8 +153,7 @@
    [:h4 "Patient information:"]
    [:p (str "Name: " (patient-name @db))]
    [:p (str "Sex: " (patient-sex @db))]
-   [:p (str "#Cones: " (no-of-cones @db))]]
-  )
+   [:p (str "#Cones: " (no-of-cones @db))]])
 
 (defn toggle [label id enable?]
  [:div.ui.toggle.checkbox.disabled
@@ -168,9 +168,7 @@
                          (if checked 
                            (snd :toggle-on id)
                            (snd :toggle-off id))))}]
-  [:label (or label "")]
-  ]
-)
+  [:label (or label "")]])
 
 (defn cone-status []
   [:div 
@@ -186,10 +184,7 @@
           [toggle "On/Off" (str i) (nth-cone-on? @db i)]
           [:p (str (nth-cone-status @db i))]
           [:p "-------------------------------"]
-          ]
-         )))
-       ]
-      )
+          ])))])
 
 (defn home-page []
   [:div [:h2 "Welcome to Cone Monitor"]
