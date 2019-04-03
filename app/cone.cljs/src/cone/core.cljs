@@ -113,12 +113,32 @@
   (js/window.alert "Treatment finished")
   )
 
+(defn open-patient-electron []
+  (let [electron (js/require "electron")
+        remote (.-remote electron)
+        dialog (.-dialog remote)
+        ]
+    (.showOpenDialog dialog #(println %))
+    )
+  )
+(defn open-patient-html []
+  
+  )
+
+(defn open-patient []
+  (try
+    (open-patient-electron) 
+    (catch :default e
+      (js/window.alert "open patient")))
+  )
+
 (defn snd [msg & rst]
   (condp = msg
     :start-treat (start-treat)
     :toggle-on (apply toggle-on rst)
     :toggle-off (apply toggle-off rst)
     :finish-treat (finish-treat)
+    :open-patient (open-patient)
     ))
 
 ;; -------------------------
@@ -135,25 +155,43 @@
   )
 
 (defn simple-component []
-  [:div.ui.disabled (greyout) ;{:style {:backgroundColor "#CCCCCC"}}
+  [:div.ui.disabled (greyout)
    [:p "I am a component!"]
    [:p.someclass
     "I have " [:strong "bold"]
     [:span {:style {:color "red"}} " and red "] "text."]])
 
+(defn open-button []
+  [:button {:on-click #(snd :open-patient)} "Open"]
+;  [:div.ui
+;   [:label.ui "Open"] 
+;   [:input#file-picker {:type "file" }]]
+  
+  )
+
+(defn start-treat-button []
+  [:button {:on-click #(snd :start-treat)} "Treat"])
+
+(defn finish-treat-button []
+  [:button {:on-click #(snd :finish-treat)} "Finish"])
+
 (defn cone-control []
   [:nav.menu
-   [:button "Open"]
-   [:button {:on-click #(snd :start-treat)} "Treats"]
-   [:button {:on-click #(snd :finish-treat)} "Finish"]
+   [open-button]
+   [start-treat-button]
+   [finish-treat-button]
    [:label (str (:status @db))]])
 
 (defn patient-info []
-  [:div 
+  [:div.ui.label 
    [:h4 "Patient information:"]
-   [:p (str "Name: " (patient-name @db))]
-   [:p (str "Sex: " (patient-sex @db))]
-   [:p (str "#Cones: " (no-of-cones @db))]])
+   [:div.label.ui (str "Name: " (patient-name @db))]
+   [:br]
+   [:span (str "Sex: " (patient-sex @db))]
+   [:br]
+   [:span (str "#Cones: " (no-of-cones @db))]
+   [:br]
+   ])
 
 (defn toggle [label id enable?]
  [:div.ui.toggle.checkbox.disabled
@@ -186,12 +224,25 @@
           [:p "-------------------------------"]
           ])))])
 
+(defn tool-bar []
+  [:div.sixteen.wide.column
+   [:div.ui.icon.menu
+    [:a.item {:on-click #(snd :open-patient)}
+     [:i.folder.open.icon]
+     ]
+    ]
+   ]
+  )
+
 (defn home-page []
-  [:div [:h2 "Welcome to Cone Monitor"]
-;         [simple-component]
-         [patient-info]
-         [cone-status]
-         [cone-control]
+  [:div.ui.grid 
+   [tool-bar]
+   [:div.sixteen.wide.column
+    [:div.huge.ui.label "Welcome to Cone Monitor"]]
+;  [simple-component]
+   [patient-info]
+   [cone-status]
+   [cone-control]
    ])
 
 ;; -------------------------
