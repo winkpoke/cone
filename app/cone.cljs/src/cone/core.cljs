@@ -184,7 +184,7 @@
 
 (defn patient-info []
   [:div.ui.label 
-   [:h4 "Patient information:"]
+   [:h4.ui "Patient information:"]
    [:div.label.ui (str "Name: " (patient-name @db))]
    [:br]
    [:span (str "Sex: " (patient-sex @db))]
@@ -228,11 +228,7 @@
   [:div.sixteen.wide.column
    [:div.ui.icon.menu
     [:a.item {:on-click #(snd :open-patient)}
-     [:i.folder.open.icon]
-     ]
-    ]
-   ]
-  )
+     [:i.folder.open.icon]]]])
 
 (defn home-page []
   [:div.ui.grid 
@@ -240,10 +236,10 @@
    [:div.sixteen.wide.column
     [:div.huge.ui.label "Welcome to Cone Monitor"]]
 ;  [simple-component]
-   [patient-info]
-   [cone-status]
-   [cone-control]
-   ])
+   [:div.ui.container.grid
+     [patient-info]
+     [cone-status]
+     [cone-control]]])
 
 ;; -------------------------
 ;; Initialize app
