@@ -38,11 +38,18 @@
   (:status (nth-cone data n)))
 
 (defn current-cone-no [data]
-  (let [cones (:cones data)]
+  (let [cones (:cones data)
+        cones-number (no-of-cones data)]
     (loop [n 0 cone (get cones 0)]
-      (if (:on? cone)
+      (if (or (:on? cone) (>= n cones-number))
         n
         (recur (inc n) (get cones (inc n)))))))
+
+(defn cone-treated? [data i]
+  (let [n (no-of-cones data)
+        current (current-cone-no data)] 
+    (if (>= n current) false true))
+  )
 
 (defn patient-name [data]
   (get-in data [:patient-info :name]))
@@ -94,6 +101,7 @@
                    :toggle-cone :toggle-on :toggle-off})
 
 (defn start-treat []
+  (js/window.alert "start-treat")
   (toggle-cone! db 0)
   (set-cone-status! db 0 :ready)
   (swap! db assoc :current 0)
@@ -121,6 +129,7 @@
     (.showOpenDialog dialog #(println %))
     )
   )
+
 (defn open-patient-html []
   
   )
@@ -170,27 +179,54 @@
   )
 
 (defn start-treat-button []
-  [:button {:on-click #(snd :start-treat)} "Treat"])
+  [:button.ui.button {:on-click #(snd :start-treat)} "Treat"])
 
 (defn finish-treat-button []
-  [:button {:on-click #(snd :finish-treat)} "Finish"])
+  [:button.ui.button {:on-click #(snd :finish-treat)} "Finish"])
 
 (defn cone-control []
   [:nav.menu
-   [open-button]
+   ;[open-button]
+   [:br]
    [start-treat-button]
    [finish-treat-button]
-   [:label (str (:status @db))]])
+   ])
 
 (defn patient-info []
-  [:div.ui.label 
-   [:h4.ui "Patient information:"]
-   [:div.label.ui (str "Name: " (patient-name @db))]
-   [:br]
-   [:span (str "Sex: " (patient-sex @db))]
-   [:br]
-   [:span (str "#Cones: " (no-of-cones @db))]
-   [:br]
+  [:div
+   [:h4.ui.large.label "Patient information:"]
+   [:div.ui.list
+    [:div.item
+     [:i.angle.right.icon]
+     [:div.content "Institution: Zhong-Shan Hospital"]]
+    [:div.item
+     [:i.angle.right.icon]
+     [:div.content (str "Name: " (patient-name @db))]]
+    [:div.item
+     [:i.angle.right.icon]
+     [:div.content "Patient ID: 0001101"]
+     ]
+    [:div.item
+     [:i.angle.right.icon]
+     [:div.content "Patient Sex: M"]
+     ]
+    [:div.item
+     [:i.angle.right.icon]
+     [:div.content "Patient Age: 65"]
+     ]
+    [:div.item
+     [:i.angle.right.icon]
+     [:div.content "Physician: Wang"]]
+    [:div.item
+     [:i.angle.right.icon]
+     [:div.content "Study Description: ABDOMEN"]]
+    [:div.item
+     [:i.angle.right.icon]
+     [:div.content "Treatment Unit: TrueBeam1"]]
+    [:div.item
+     [:i.angle.right.icon]
+     [:div.content "Cone Sequence: Cone#1/Cone#3/Cone#4"]]
+    ]
    ])
 
 (defn toggle [label id enable?]
@@ -209,20 +245,25 @@
   [:label (or label "")]])
 
 (defn cone-status []
-  [:div 
-   [:h4 "Cone status:"]
-   (let [cones (:cones @db)] 
+  [:div;>h4.ui "Cone status:"
+   [:div.ui.ordered.steps
+    (let [cones (:cones @db)] 
      (doall 
        (for [i (range (no-of-cones @db))
            :let [n (nth-cone-pos @db i)]]
-         [:div (merge {:key i}  (when-not (nth-cone-on? @db i) (greyout))) 
-          [:h5 (str "#" (inc i) " Treatment")]
-          [:p {:style {:color "green"}} 
-           (str "Cone" "#" n ":   ϕ" (nth cones-diameter n) "mm")]
-          [toggle "On/Off" (str i) (nth-cone-on? @db i)]
-          [:p (str (nth-cone-status @db i))]
-          [:p "-------------------------------"]
-          ])))])
+         [:div (merge {:key i :class (if (cone-treated? @db i) 
+                                       "completed step"
+                                       "active step"
+                                       )}  
+                      (when-not (nth-cone-on? @db i) (greyout))) 
+          ;[:h5 (str "#" (inc i) " Treatment")]
+          [:div.content
+           [:div.title (str "Cone" "#" n) ]
+            [:div.description (str "Diameter ϕ" (nth cones-diameter n) "mm")]
+            [:div.description (str "Status: " (name (nth-cone-status @db i)))]
+            [toggle "On/Off" (str i) (nth-cone-on? @db i)]
+            ]
+            ])))]])
 
 (defn tool-bar []
   [:div.sixteen.wide.column
@@ -235,11 +276,14 @@
    [tool-bar]
    [:div.sixteen.wide.column
     [:div.huge.ui.label "Welcome to Cone Monitor"]]
-;  [simple-component]
-   [:div.ui.container.grid
+   [:div.three.wide.column
      [patient-info]
-     [cone-status]
-     [cone-control]]])
+     [:button.ui.fluid.button]
+     ]
+   [:div.twelve.wide.column
+    [cone-status]
+    [cone-control]
+     ]])
 
 ;; -------------------------
 ;; Initialize app

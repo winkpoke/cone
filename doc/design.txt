@@ -3,3 +3,14 @@ States:
 - Rotating
 - OnPostion
 - Treating
+
+Patient Information:
+- InstitutionName xxx Hospital
+- PatientName Zhang San
+- PatientID 0001101
+- PatientSex M
+- PatientAge 65
+- Physician Wang
+- StudyDescription ABDOMEN
+- TreatmentUnit TrueBeam1
+- ConSequence Cone#1/Cone#3/Cone#4
