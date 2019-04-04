@@ -230,8 +230,9 @@
    ])
 
 (defn toggle [label id enable?]
- [:div.ui.toggle.checkbox.disabled
-  [:input {:id id
+ [:div.ui.toggle.checkbox.disabled 
+  [:input {:style {:backgroundColor "red"}
+           :id id
            :type "checkbox" 
            :name "public" 
            :disabled (not enable?)
@@ -261,6 +262,7 @@
            [:div.title (str "Cone" "#" n) ]
             [:div.description (str "Diameter ϕ" (nth cones-diameter n) "mm")]
             [:div.description (str "Status: " (name (nth-cone-status @db i)))]
+            [:div.description [:br]]
             [toggle "On/Off" (str i) (nth-cone-on? @db i)]
             ]
             ])))]])
