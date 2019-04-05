@@ -1,7 +1,10 @@
 (ns cone.core
-    (:require
-      [reagent.core :as r]))
-
+  (:require
+    [reagent.core :as r]
+    [taoensso.timbre :as timbre
+      :refer-macros [log  trace  debug  info  warn  error  fatal  report
+                     logf tracef debugf infof warnf errorf fatalf reportf
+                     spy get-env]]))
 
 ;; -------------------------
 ;; Model
@@ -14,6 +17,7 @@
                :cones '(1 3 4)})
 
 (defn init-model [data]
+  (info "init-model [data] with data: ", data)
   (letfn [(no-of-cones [] (count (:cones data)))
           (nth-cone [n] (nth (:cones data) n))] 
     {:patient-info (:patient-info data)
@@ -70,10 +74,10 @@
   (swap! db set-cone-status n status))
 
 (defn set-current-cone! [db n]
-  (println (str "current cone#" (current-cone-no @db)
-                  " set cone#" n
-                  " n cones: " (no-of-cones @db)
-                  "\n" @db))
+  (info (str "current cone#" (current-cone-no @db)
+             " set cone#" n
+             " n cones: " (no-of-cones @db)
+             "\n" @db))
   (let [i (current-cone-no @db)]
     (when-not (== n i) 
       (letfn [(update-all [db i n] 
@@ -81,18 +85,10 @@
                 (set-cone-status! db i :idle)
                 (when (< n (no-of-cones @db)) 
                   (do
-                    (println "----------------")
                     (toggle-cone! db n))
                     (set-cone-status! db n :ready)))] 
-        ;(swap! db update-all i n)
         (update-all db i n)
-        (println @db)
         ))))
-
-
-;(print @db)
-;(println (:cones @db))
-;(println (no-of-cones @db))
 
 ;; -------------------------
 ;; Message
@@ -102,11 +98,10 @@
 
 (defn start-treat []
   (js/window.alert "start-treat")
+  (info "start-treat []")
   (toggle-cone! db 0)
   (set-cone-status! db 0 :ready)
-  (swap! db assoc :current 0)
-  (println @db)
-  )
+  (swap! db assoc :current 0))
 
 (defn toggle-on [n]
   (js/console.log "toggle-on cone#" n)
@@ -204,16 +199,13 @@
      [:div.content (str "Name: " (patient-name @db))]]
     [:div.item
      [:i.angle.right.icon]
-     [:div.content "Patient ID: 0001101"]
-     ]
+     [:div.content "Patient ID: 0001101"]]
     [:div.item
      [:i.angle.right.icon]
-     [:div.content "Patient Sex: M"]
-     ]
+     [:div.content "Patient Sex: M"]]
     [:div.item
      [:i.angle.right.icon]
-     [:div.content "Patient Age: 65"]
-     ]
+     [:div.content "Patient Age: 65"]]
     [:div.item
      [:i.angle.right.icon]
      [:div.content "Physician: Wang"]]
@@ -225,9 +217,7 @@
      [:div.content "Treatment Unit: TrueBeam1"]]
     [:div.item
      [:i.angle.right.icon]
-     [:div.content "Cone Sequence: Cone#1/Cone#3/Cone#4"]]
-    ]
-   ])
+     [:div.content "Cone Sequence: Cone#1/Cone#3/Cone#4"]]]])
 
 (defn toggle [label id enable?]
  [:div.ui.toggle.checkbox.disabled 
@@ -246,7 +236,7 @@
   [:label (or label "")]])
 
 (defn cone-status []
-  [:div;>h4.ui "Cone status:"
+  [:div
    [:div.ui.ordered.steps
     (let [cones (:cones @db)] 
      (doall 
@@ -254,18 +244,16 @@
            :let [n (nth-cone-pos @db i)]]
          [:div (merge {:key i :class (if (cone-treated? @db i) 
                                        "completed step"
-                                       "active step"
-                                       )}  
+                                       "active step")}  
                       (when-not (nth-cone-on? @db i) (greyout))) 
-          ;[:h5 (str "#" (inc i) " Treatment")]
           [:div.content
            [:div.title (str "Cone" "#" n) ]
-            [:div.description (str "Diameter ϕ" (nth cones-diameter n) "mm")]
-            [:div.description (str "Status: " (name (nth-cone-status @db i)))]
+            [:div.description 
+             (str "Diameter ϕ" (nth cones-diameter n) "mm")]
+            [:div.description 
+             (str "Status: " (name (nth-cone-status @db i)))]
             [:div.description [:br]]
-            [toggle "On/Off" (str i) (nth-cone-on? @db i)]
-            ]
-            ])))]])
+            [toggle "On/Off" (str i) (nth-cone-on? @db i)]]])))]])
 
 (defn tool-bar []
   [:div.sixteen.wide.column
@@ -279,9 +267,7 @@
    [:div.sixteen.wide.column
     [:div.huge.ui.label "Welcome to Cone Monitor"]]
    [:div.three.wide.column
-     [patient-info]
-     [:button.ui.fluid.button]
-     ]
+     [patient-info]]
    [:div.twelve.wide.column
     [cone-status]
     [cone-control]
