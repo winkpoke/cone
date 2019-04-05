@@ -26,15 +26,23 @@
                               :treatment-unit "TrueBeam1"
                               :cone-Sequence "Cone#1/Cone#3/Cone#4"
                               }
-               :cones '(1 3 4)})
+               :cones '(1 3 4)
+               :treatment-time '(30 20 10)
+               })
 
 (defn init-model [data]
   (info "init-model [data] with data: ", data)
   (letfn [(no-of-cones [] (count (:cones data)))
-          (nth-cone [n] (nth (:cones data) n))] 
+          (nth-cone [n] (nth (:cones data) n))
+          (nth-treatment-time [n] (nth (:treatment-time data) n))
+          ] 
     {:patient-info (:patient-info data)
      :cones (vec (for [i (range (no-of-cones))]
-                   {:n i :cone-pos (nth-cone i) :on? false :status :idle}))}))
+                   {:n i 
+                    :cone-pos (nth-cone i) 
+                    :on? false 
+                    :status :idle
+                    :time (nth-treatment-time i)}))}))
 
 (def db (r/atom (init-model raw-data)))
 
@@ -52,6 +60,10 @@
 
 (defn nth-cone-status [data n]
   (:status (nth-cone data n)))
+
+(defn nth-treatment-time [data n]
+  (info "nth-treatment-time [] " n)
+  (:time (nth-cone data n)))
 
 (defn current-cone-no [data]
   (let [cones (:cones data)
@@ -262,6 +274,7 @@
              (str "Diameter ϕ" (nth cones-diameter n) "mm")]
             [:div.description 
              (str "Status: " (name (nth-cone-status @db i)))]
+            [:div.description "Treatment time: " (nth-treatment-time @db i) "\""]
             [:div.description [:br]]
             [toggle "On/Off" (str i) (nth-cone-on? @db i)]]])))]])
 
@@ -289,9 +302,10 @@
   (letfn [(time-stamp [] (.toISOString (js/Date.)))]
     (assoc data :vargs (cons (time-stamp) (:vargs data)))))
 
+
 (defn mount-root []
   (r/render [home-page] (.getElementById js/document "app")))
 
 (defn init! []
-  (timbre/merge-config! {:middleware [middleware-time-stamp]})
+(timbre/merge-config! {:middleware [middleware-time-stamp]})
   (mount-root))
