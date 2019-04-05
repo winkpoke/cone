@@ -13,7 +13,19 @@
 
 (defonce status #{:idle :ready :switching :on-position})
 
-(def raw-data {:patient-info {:name "John" :sex "Male"}
+
+
+
+(def raw-data {:patient-info {:institution "ZS Hospital"
+                              :name "Zhang San" 
+                              :sex "M"
+                              :id "0001101"
+                              :age 65
+                              :physician "Wang"
+                              :study-description "ABDOMEN"
+                              :treatment-unit "TrueBeam1"
+                              :cone-Sequence "Cone#1/Cone#3/Cone#4"
+                              }
                :cones '(1 3 4)})
 
 (defn init-model [data]
@@ -61,6 +73,9 @@
 (defn patient-sex [data]
   (get-in data [:patient-info :sex]))
 
+(defn patient-id [data]
+  (get-in data [:patient-info :id]))
+
 (defn toggle-cone [data n]
   (update-in data [:cones n :on?] not))
 
@@ -94,7 +109,7 @@
 ;; Message
 
 (defonce message #{:open-patient :start-treat :finish-treat 
-                   :toggle-cone :toggle-on :toggle-off})
+                   :toggle-on :toggle-off})
 
 (defn start-treat []
   (js/window.alert "start-treat")
@@ -104,26 +119,21 @@
   (swap! db assoc :current 0))
 
 (defn toggle-on [n]
-  (js/console.log "toggle-on cone#" n)
-  )
+  (info "toggle-on cone#" n))
 
 (defn toggle-off [n]
-  (js/console.log "toggle-off cone#" n)
-  (set-current-cone! db (inc n))
-  )
+  (info "toggle-off cone#" n)
+  (set-current-cone! db (inc n)))
 
 (defn finish-treat []
-  (js/window.alert "Treatment finished")
-  )
+  (info "finish-treat patient id: " (patient-id @db))
+  (js/window.alert "Treatment finished"))
 
 (defn open-patient-electron []
   (let [electron (js/require "electron")
         remote (.-remote electron)
-        dialog (.-dialog remote)
-        ]
-    (.showOpenDialog dialog #(println %))
-    )
-  )
+        dialog (.-dialog remote)]
+    (.showOpenDialog dialog #(println %))))
 
 (defn open-patient-html []
   
@@ -199,7 +209,7 @@
      [:div.content (str "Name: " (patient-name @db))]]
     [:div.item
      [:i.angle.right.icon]
-     [:div.content "Patient ID: 0001101"]]
+     [:div.content "Patient ID: " (patient-id @db)]]
     [:div.item
      [:i.angle.right.icon]
      [:div.content "Patient Sex: M"]]
@@ -270,14 +280,18 @@
      [patient-info]]
    [:div.twelve.wide.column
     [cone-status]
-    [cone-control]
-     ]])
+    [cone-control]]])
 
 ;; -------------------------
 ;; Initialize app
+
+(defn middleware-time-stamp [data]
+  (letfn [(time-stamp [] (.toISOString (js/Date.)))]
+    (assoc data :vargs (cons (time-stamp) (:vargs data)))))
 
 (defn mount-root []
   (r/render [home-page] (.getElementById js/document "app")))
 
 (defn init! []
+  (timbre/merge-config! {:middleware [middleware-time-stamp]})
   (mount-root))
