@@ -28,6 +28,7 @@
                               }
                :cones '(1 3 4)
                :treatment-time '(30 20 10)
+               :clock-id nil
                })
 
 (defn init-model [data]
@@ -116,6 +117,12 @@
         (update-all db i n)
         ))))
 
+(defn clock-id [data]
+  (:clock-id data))
+
+(defn set-clock-id! [^r/atom db id]
+  (swap! db assoc :clock-id id))
+
 ;; -------------------------
 ;; Message
 
@@ -129,11 +136,25 @@
   (set-cone-status! db 0 :ready)
   (swap! db assoc :current 0))
 
-(defn toggle-on [n]
-  (set-cone-status! db n :treating))
+(defn clock-on [^r/atom clock]
+  (info "clock-on: " @clock)
+  (let [clock-id (js/setInterval #(when (> @clock 0) (swap! clock dec)) 1000)]
+    (set-clock-id! db clock-id)
+    (info "clock id: " clock-id)))
+
+(defn clock-off [id]
+  (info "clock-off: " id)
+  (js/clearInterval id)
+  )
+
+(defn toggle-on [n clock]
+  (set-cone-status! db n :treating)
+  (clock-on clock)
+  )
 
 (defn toggle-off [n]
   (info "toggle-off cone#" n)
+  (clock-off (clock-id @db))
   (set-current-cone! db (inc n)))
 
 (defn finish-treat []
@@ -241,7 +262,7 @@
      [:i.angle.right.icon]
      [:div.content "Cone Sequence: Cone#1/Cone#3/Cone#4"]]]])
 
-(defn toggle [label id enable?]
+(defn toggle [label id enable? clock start]
  [:div.ui.toggle.checkbox.disabled 
   [:input {:style {:backgroundColor "red"}
            :id id
@@ -250,33 +271,38 @@
            :disabled (not enable?)
            :on-click (fn [this]
                        (js/console.log (-> this .-target .-checked))
+                       (reset! clock start)
                        (let [id (js/parseInt (-> this .-target .-id))
                              checked (-> this .-target .-checked)]
                          (if checked 
-                           (snd :toggle-on id)
+                           (snd :toggle-on id clock)
                            (snd :toggle-off id))))}]
   [:label (or label "")]])
 
 (defn cone-status []
-  [:div
-   [:div.ui.ordered.steps
-    (let [cones (:cones @db)] 
-     (doall 
-       (for [i (range (no-of-cones @db))
-           :let [n (nth-cone-pos @db i)]]
-         [:div (merge {:key i :class (if (cone-treated? @db i) 
-                                       "completed step"
-                                       "active step")}  
-                      (when-not (nth-cone-on? @db i) (greyout))) 
-          [:div.content
-           [:div.title (str "Cone" "#" n) ]
-            [:div.description 
-             (str "Diameter ϕ" (nth cones-diameter n) "mm")]
-            [:div.description 
-             (str "Status: " (name (nth-cone-status @db i)))]
-            [:div.description "Treatment time: " (nth-treatment-time @db i) "\""]
-            [:div.description [:br]]
-            [toggle "On/Off" (str i) (nth-cone-on? @db i)]]])))]])
+  (let [clock (r/atom 10)] 
+    (fn [] 
+      [:div
+       [:div.ui.ordered.steps
+        (let [cones (:cones @db)] 
+         (doall 
+           (for [i (range (no-of-cones @db))
+               :let [n (nth-cone-pos @db i)
+                     treatment-time (nth-treatment-time @db i)
+                     ]]
+             [:div (merge {:key i :class (if (cone-treated? @db i) 
+                                           "completed step"
+                                           "active step")}  
+                          (when-not (nth-cone-on? @db i) (greyout))) 
+              [:div.content
+               [:div.title (str "Cone" "#" n) ]
+                [:div.description 
+                 (str "Diameter ϕ" (nth cones-diameter n) "mm")]
+                [:div.description 
+                 (str "Status: " (name (nth-cone-status @db i)))]
+                [:div.description "Treatment time: " (when (= (nth-cone-status @db i) :treating) (str @clock "/")) treatment-time "\""]
+                [:div.description [:br]]
+                [toggle "On/Off" (str i) (nth-cone-on? @db i) clock treatment-time]]])))]])))
 
 (defn tool-bar []
   [:div.sixteen.wide.column
