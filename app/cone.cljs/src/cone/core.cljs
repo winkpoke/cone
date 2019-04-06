@@ -11,7 +11,7 @@
 
 (defonce cones-diameter '(0.5 1.0 1.5 2.0 2.5 3.0))
 
-(defonce status #{:idle :ready :switching :on-position})
+(defonce status #{:idle :ready :treating :switching :on-position})
 
 
 
@@ -62,7 +62,6 @@
   (:status (nth-cone data n)))
 
 (defn nth-treatment-time [data n]
-  (info "nth-treatment-time [] " n)
   (:time (nth-cone data n)))
 
 (defn current-cone-no [data]
@@ -131,7 +130,7 @@
   (swap! db assoc :current 0))
 
 (defn toggle-on [n]
-  (info "toggle-on cone#" n))
+  (set-cone-status! db n :treating))
 
 (defn toggle-off [n]
   (info "toggle-off cone#" n)
@@ -159,6 +158,7 @@
   )
 
 (defn snd [msg & rst]
+  (info "message: " msg " - " rst)
   (condp = msg
     :start-treat (start-treat)
     :toggle-on (apply toggle-on rst)
