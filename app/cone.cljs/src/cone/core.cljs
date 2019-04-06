@@ -317,7 +317,7 @@
     [:div.huge.ui.label "Welcome to Cone Monitor"]]
    [:div.three.wide.column
      [patient-info]]
-   [:div.twelve.wide.column
+   [:div.centered.aligned.ten.wide.column
     [cone-status]
     [cone-control]]])
 
