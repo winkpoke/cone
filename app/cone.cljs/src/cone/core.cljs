@@ -28,7 +28,6 @@
                               }
                :cones '(1 3 4)
                :treatment-time '(30 20 10)
-               :clock-id nil
                })
 
 (defn init-model [data]
@@ -38,6 +37,8 @@
           (nth-treatment-time [n] (nth (:treatment-time data) n))
           ] 
     {:patient-info (:patient-info data)
+     :clock-id nil
+     :just-load-in true
      :cones (vec (for [i (range (no-of-cones))]
                    {:n i 
                     :cone-pos (nth-cone i) 
@@ -73,10 +74,21 @@
         n
         (recur (inc n) (get cones (inc n)))))))
 
+(defn just-load-in? [data]
+  (:just-load-in data))
+
+(defn clear-just-load-in! [db]
+  (swap! db assoc :just-load-in false)
+  )
+
 (defn cone-treated? [data i]
   (let [n (no-of-cones data)
         current (current-cone-no data)] 
-    (if (>= n current) false true))
+    (info "cone-treated? i =" n "; current = " current "; just-load? = " (just-load-in? @db))
+    (if (just-load-in? @db) false 
+                            (if (>= i current )
+                              false true))
+    )
   )
 
 (defn patient-name [data]
@@ -117,6 +129,7 @@
         (update-all db i n)
         ))))
 
+
 (defn clock-id [data]
   (:clock-id data))
 
@@ -134,7 +147,9 @@
   (info "start-treat []")
   (toggle-cone! db 0)
   (set-cone-status! db 0 :ready)
-  (swap! db assoc :current 0))
+  (swap! db assoc :current 0)
+  (clear-just-load-in! db)
+  )
 
 (defn clock-on [^r/atom clock]
   (info "clock-on: " @clock)
@@ -226,8 +241,10 @@
   [:nav.menu
    ;[open-button]
    [:br]
-   [start-treat-button]
-   [finish-treat-button]
+
+   (if (just-load-in? @db)
+     [start-treat-button]
+     [finish-treat-button])
    ])
 
 (defn patient-info []
@@ -289,7 +306,8 @@
            (for [i (range (no-of-cones @db))
                :let [n (nth-cone-pos @db i)
                      treatment-time (nth-treatment-time @db i)
-                     ]]
+                     elapsed (when (= (nth-cone-status @db i) :treating) 
+                               (str @clock "/"))]]
              [:div (merge {:key i :class (if (cone-treated? @db i) 
                                            "completed step"
                                            "active step")}  
@@ -300,7 +318,7 @@
                  (str "Diameter ϕ" (nth cones-diameter n) "mm")]
                 [:div.description 
                  (str "Status: " (name (nth-cone-status @db i)))]
-                [:div.description "Treatment time: " (when (= (nth-cone-status @db i) :treating) (str @clock "/")) treatment-time "\""]
+                [:div.description "Treatment time: " elapsed treatment-time "\""]
                 [:div.description [:br]]
                 [toggle "On/Off" (str i) (nth-cone-on? @db i) clock treatment-time]]])))]])))
 
