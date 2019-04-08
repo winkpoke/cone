@@ -6,6 +6,53 @@
                      logf tracef debugf infof warnf errorf fatalf reportf
                      spy get-env]]))
 
+
+;; -------------------------
+;; Timer
+
+(defn create-timer [] 
+  (r/atom {:id nil  ;; timer id return from js/setInterval
+           :time nil
+           :elapsed nil
+           :interval nil}))
+
+(defn reset-timer [^r/atom d t & {:keys [interval]
+                                  :or {interval 1000}}]
+  (swap! d assoc :time t :id nil :elapsed 0 :interval interval))
+
+(defn start-timer [^r/atom d]
+  (let [interval (:interval @d)
+        id (js/setInterval #(when (< (:elapsed @d) (:time @d)) 
+                              (swap! d update :elapsed inc)) 
+                           interval)]
+    (swap! d assoc :id id)))
+
+(defn pause-timer [^r/atom d]
+  (if-let [id (:id @d)]
+    (js/clearInterval id)))
+
+(defn resume-timer [^r/atom d]
+  (let [interval (:interval @d)
+        id (:id @d)]
+    (if (and interval id) 
+      (js/setInterval #(when (< (:elapsed @d) (:time @d))
+                         (swap! d update :elapsed inc))
+                      interval)
+      nil)))
+
+(defn stop-timer [d]
+  (if-let [id (:id @d)] 
+    (js/clearInterval id))
+  (reset-timer d nil))
+
+(defn clock []
+  (let [timer (create-timer)] 
+    (reset-timer timer 10 :interval 1000)
+    (start-timer timer)
+    (fn [] 
+      [:div
+        (str "timer: " (when (:id @timer) (:elapsed @timer)))])))
+
 ;; -------------------------
 ;; Model
 
@@ -26,9 +73,6 @@
                :cones '(1 3 4)
                :treatment-time '(30 20 10)
                })
-
-(defonce timer (r/atom {:id nil
-                        :elapsed nil}))
 
 (defn init-model [data]
   (info "init-model [data] with data: ", data)
@@ -164,12 +208,14 @@
 
 (defn toggle-on [n clock]
   (set-cone-status! db n :treating)
-  (clock-on clock)
+  ;(clock-on clock)
+  (start-timer clock)
   )
 
-(defn toggle-off [n]
+(defn toggle-off [n clock]
   (info "toggle-off cone#" n)
-  (clock-off (clock-id @db))
+  ;(clock-off (clock-id @db))
+  (stop-timer clock)
   (set-current-cone! db (inc n)))
 
 (defn finish-treat []
@@ -288,16 +334,17 @@
            :disabled (not enable?)
            :on-click (fn [this]
                        (js/console.log (-> this .-target .-checked))
-                       (reset! clock start)
+                       ;(reset! clock start)
+                       (reset-timer clock start)
                        (let [id (js/parseInt (-> this .-target .-id))
                              checked (-> this .-target .-checked)]
                          (if checked 
                            (snd :toggle-on id clock)
-                           (snd :toggle-off id))))}]
+                           (snd :toggle-off id clock))))}]
   [:label (or label "")]])
 
 (defn cone-status []
-  (let [clock (r/atom 10)] 
+  (let [clock (create-timer)] 
     (fn [] 
       [:div
        [:div.ui.ordered.steps
@@ -307,7 +354,7 @@
                :let [n (nth-cone-pos @db i)
                      treatment-time (nth-treatment-time @db i)
                      elapsed (when (= (nth-cone-status @db i) :treating) 
-                               (str @clock "/"))]]
+                               (str (:elapsed @clock) "/"))]]
              [:div (merge {:key i :class (if (cone-treated? @db i) 
                                            "completed step"
                                            "active step")}  
@@ -337,7 +384,9 @@
      [patient-info]]
    [:div.centered.aligned.ten.wide.column
     [cone-status]
-    [cone-control]]])
+    [cone-control]
+    [clock]
+    ]])
 
 ;; -------------------------
 ;; Initialize app
