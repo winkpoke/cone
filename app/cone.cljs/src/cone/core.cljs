@@ -81,7 +81,6 @@
           (nth-treatment-time [n] (nth (:treatment-time data) n))
           ] 
     {:patient-info (:patient-info data)
-     :clock-id nil
      :just-load-in true
      :cones (vec (for [i (range (no-of-cones))]
                    {:n i 
@@ -122,18 +121,14 @@
   (:just-load-in data))
 
 (defn clear-just-load-in! [db]
-  (swap! db assoc :just-load-in false)
-  )
+  (swap! db assoc :just-load-in false))
 
 (defn cone-treated? [data i]
   (let [n (no-of-cones data)
         current (current-cone-no data)] 
-    (info "cone-treated? i =" n "; current = " current "; just-load? = " (just-load-in? @db))
     (if (just-load-in? @db) false 
                             (if (>= i current )
-                              false true))
-    )
-  )
+                              false true))))
 
 (defn patient-name [data]
   (get-in data [:patient-info :name]))
@@ -170,15 +165,8 @@
                   (do
                     (toggle-cone! db n))
                     (set-cone-status! db n :ready)))] 
-        (update-all db i n)
-        ))))
+        (update-all db i n)))))
 
-
-(defn clock-id [data]
-  (:clock-id data))
-
-(defn set-clock-id! [^r/atom db id]
-  (swap! db assoc :clock-id id))
 
 ;; -------------------------
 ;; Message
@@ -207,7 +195,10 @@
 
 (defn finish-treat []
   (info "finish-treat patient id: " (patient-id @db))
-  (js/window.alert "Treatment finished"))
+  (let [n (current-cone-no @db)] 
+    (if (= (nth-cone-status @db n) :treating) 
+      (js/window.alert "Treating. Operation is invalid.") 
+      (js/window.alert "Treatment finished"))))
 
 (defn open-patient-electron []
   (let [electron (js/require "electron")
@@ -223,8 +214,9 @@
   (try
     (open-patient-electron) 
     (catch :default e
-      (js/window.alert "open patient")))
-  )
+      (js/window.alert "open patient"))))
+
+(defonce message-proc {})
 
 (defn snd [msg & rst]
   (info "message: " msg " - " rst)
@@ -261,20 +253,18 @@
 ;  [:div.ui
 ;   [:label.ui "Open"] 
 ;   [:input#file-picker {:type "file" }]]
-  
   )
 
 (defn start-treat-button []
-  [:button.ui.button {:on-click #(snd :start-treat)} "Treat"])
+  [:button.ui.primary.button {:on-click #(snd :start-treat)} "Treat"])
 
 (defn finish-treat-button []
-  [:button.ui.button {:on-click #(snd :finish-treat)} "Finish"])
+  [:button.ui.primary.button {:on-click #(snd :finish-treat)} "Finish"])
 
 (defn cone-control []
   [:nav.menu
    ;[open-button]
    [:br]
-
    (if (just-load-in? @db)
      [start-treat-button]
      [finish-treat-button])
@@ -342,8 +332,7 @@
         [toggle "On/Off" (str i) (nth-cone-on? @db i) clock treatment-time]]))))
 
 (defn cone-status []
-  [:div
-   [:div.ui.ordered.steps
+  [:div.ui.ordered.steps
     (let [cones (:cones @db)] 
      (doall 
        (for [i (range (no-of-cones @db))
@@ -360,7 +349,7 @@
              (str "Diameter ϕ" (nth cones-diameter n) "mm")]
             [:div.description 
              (str "Status: " (name (nth-cone-status @db i)))]
-            [a-timer i]]])))]])
+            [a-timer i]]])))])
 
 (defn tool-bar []
   [:div.sixteen.wide.column
