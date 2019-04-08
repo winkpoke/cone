@@ -195,26 +195,13 @@
   (clear-just-load-in! db)
   )
 
-(defn clock-on [^r/atom clock]
-  (info "clock-on: " @clock)
-  (let [clock-id (js/setInterval #(when (> @clock 0) (swap! clock dec)) 1000)]
-    (set-clock-id! db clock-id)
-    (info "clock id: " clock-id)))
-
-(defn clock-off [id]
-  (info "clock-off: " id)
-  (js/clearInterval id)
-  )
-
 (defn toggle-on [n clock]
   (set-cone-status! db n :treating)
-  ;(clock-on clock)
   (start-timer clock)
   )
 
 (defn toggle-off [n clock]
   (info "toggle-off cone#" n)
-  ;(clock-off (clock-id @db))
   (stop-timer clock)
   (set-current-cone! db (inc n)))
 
@@ -343,31 +330,37 @@
                            (snd :toggle-off id clock))))}]
   [:label (or label "")]])
 
-(defn cone-status []
+(defn a-timer [i]
   (let [clock (create-timer)] 
     (fn [] 
-      [:div
-       [:div.ui.ordered.steps
-        (let [cones (:cones @db)] 
-         (doall 
-           (for [i (range (no-of-cones @db))
-               :let [n (nth-cone-pos @db i)
-                     treatment-time (nth-treatment-time @db i)
-                     elapsed (when (= (nth-cone-status @db i) :treating) 
-                               (str (:elapsed @clock) "/"))]]
-             [:div (merge {:key i :class (if (cone-treated? @db i) 
-                                           "completed step"
-                                           "active step")}  
-                          (when-not (nth-cone-on? @db i) (greyout))) 
-              [:div.content
-               [:div.title (str "Cone" "#" n) ]
-                [:div.description 
-                 (str "Diameter ϕ" (nth cones-diameter n) "mm")]
-                [:div.description 
-                 (str "Status: " (name (nth-cone-status @db i)))]
-                [:div.description "Treatment time: " elapsed treatment-time "\""]
-                [:div.description [:br]]
-                [toggle "On/Off" (str i) (nth-cone-on? @db i) clock treatment-time]]])))]])))
+      (let [elapsed (when (= (nth-cone-status @db i) :treating) 
+                      (str (:elapsed @clock) "/"))
+            treatment-time (nth-treatment-time @db i)] 
+        [:div
+        [:div.description "Treatment time: " elapsed treatment-time "\""]
+        [:div [:br]]
+        [toggle "On/Off" (str i) (nth-cone-on? @db i) clock treatment-time]]))))
+
+(defn cone-status []
+  [:div
+   [:div.ui.ordered.steps
+    (let [cones (:cones @db)] 
+     (doall 
+       (for [i (range (no-of-cones @db))
+           :let [n (nth-cone-pos @db i)
+                 treatment-time (nth-treatment-time @db i)
+                 ]]
+         [:div (merge {:key i :class (if (cone-treated? @db i) 
+                                       "completed step"
+                                       "active step")}  
+                      (when-not (nth-cone-on? @db i) (greyout))) 
+          [:div.content
+           [:div.title (str "Cone" "#" n) ]
+            [:div.description 
+             (str "Diameter ϕ" (nth cones-diameter n) "mm")]
+            [:div.description 
+             (str "Status: " (name (nth-cone-status @db i)))]
+            [a-timer i]]])))]])
 
 (defn tool-bar []
   [:div.sixteen.wide.column
@@ -385,7 +378,6 @@
    [:div.centered.aligned.ten.wide.column
     [cone-status]
     [cone-control]
-    [clock]
     ]])
 
 ;; -------------------------
@@ -394,7 +386,6 @@
 (defn middleware-time-stamp [data]
   (letfn [(time-stamp [] (.toISOString (js/Date.)))]
     (assoc data :vargs (cons (time-stamp) (:vargs data)))))
-
 
 (defn mount-root []
   (r/render [home-page] (.getElementById js/document "app")))
