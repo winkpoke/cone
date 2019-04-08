@@ -1,7 +1,7 @@
 - 2019.03.31   Successfully prototyped wasm + rust (yew) + electron
 
 - 2019.04.01   Initialized repo and checked into github
-- 2019.04.08   Connect to figwheel clojurescript nrepl with fireplace-vim:
+- 2019.04.08   + Connect to figwheel clojurescript nrepl with fireplace-vim:
                 1. add following to porject.clj
                 
                  :profiles {:dev {:dependencies [[com.cemerick/piggieback "0.2.1"]
@@ -11,3 +11,7 @@
                                     [cemerick.piggieback/wrap-cljs-repl]}}}     
                 2. :Connect to nrepl port in fireplace-vim
                 3. :Piggieback (figwheel-sidecar.repl-api/repl-env)
+
+               --------------
+               + moving to shadow-cljs
+                  https://manuel-uberti.github.io/programming/2018/11/14/deps-shadow-cljs/
