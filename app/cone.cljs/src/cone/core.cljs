@@ -13,10 +13,7 @@
 
 (defonce status #{:idle :ready :treating :switching :on-position})
 
-
-
-
-(def raw-data {:patient-info {:institution "ZS Hospital"
+(defonce raw-data {:patient-info {:institution "ZS Hospital"
                               :name "Zhang San" 
                               :sex "M"
                               :id "0001101"
@@ -29,6 +26,9 @@
                :cones '(1 3 4)
                :treatment-time '(30 20 10)
                })
+
+(defonce timer (r/atom {:id nil
+                        :elapsed nil}))
 
 (defn init-model [data]
   (info "init-model [data] with data: ", data)
