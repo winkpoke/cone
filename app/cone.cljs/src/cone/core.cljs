@@ -225,8 +225,7 @@
     :toggle-on (apply toggle-on rst)
     :toggle-off (apply toggle-off rst)
     :finish-treat (finish-treat)
-    :open-patient (open-patient)
-    ))
+    :open-patient (open-patient)))
 
 ;; -------------------------
 ;; Views
@@ -234,8 +233,7 @@
 (defn greyout? [n]
   (let [status #{:idle :switching}] 
     (or (contains? status (:status @db))
-        (not= n (:n @db))))
-  )
+        (not= n (:n @db)))))
 
 (defn greyout []
   {:style {:backgroundColor "#CCCCCC"}}
@@ -380,5 +378,5 @@
   (r/render [home-page] (.getElementById js/document "app")))
 
 (defn init! []
-(timbre/merge-config! {:middleware [middleware-time-stamp]})
+  (timbre/merge-config! {:middleware [middleware-time-stamp]})
   (mount-root))
